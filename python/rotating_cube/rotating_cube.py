@@ -55,24 +55,45 @@ class Point3D:
 		y = -self.y * factor + win_height / 2
 		return Point3D(x, y, self.z)
 
+class Face:
+	def __init__(self, points, color):
+		self.points = points
+		self.color = color
+
+	def avg_z(self):
+		return ( self.points[0].z + 
+				self.points[1].z + 
+				self.points[2].z + 
+				self.points[3].z
+				) / 4.0
+
+	def display(self, game):
+		pointlist = [(self.points[0].x, self.points[0].y), 
+					(self.points[1].x, self.points[1].y),
+					(self.points[2].x, self.points[2].y),
+					(self.points[3].x, self.points[3].y),
+					(self.points[0].x, self.points[0].y)]
+		pygame.draw.polygon(game.screen, self.color,pointlist)
+		pygame.draw.lines(game.screen, COL_BLACK, True, pointlist, 1)
+
 class Cube:
 	"' cube unit '"
 	def __init__(self,point,size=0.5):
 		self.point = point
+		self.angle_x = 0
+		self.angle_y = 0
+		self.angle_z = 0
 		self.vertices = [
-				Point3D(point.x-size, point.y+size, point.z-size ),
-				Point3D(point.x+size, point.y+size, point.z-size ),
-				Point3D(point.x+size, point.y-size, point.z-size ),
-				Point3D(point.x-size, point.y-size, point.z-size ),
-				Point3D(point.x-size, point.y+size, point.z+size ),
-				Point3D(point.x+size, point.y+size, point.z+size ),
-				Point3D(point.x+size, point.y-size, point.z+size ),
-				Point3D(point.x-size, point.y-size, point.z+size )
+				Point3D(point.x-size, point.y+size, point.z-size ), #0
+				Point3D(point.x+size, point.y+size, point.z-size ), #1
+				Point3D(point.x+size, point.y-size, point.z-size ), #2
+				Point3D(point.x-size, point.y-size, point.z-size ), #3
+				Point3D(point.x-size, point.y+size, point.z+size ), #4
+				Point3D(point.x+size, point.y+size, point.z+size ), #5
+				Point3D(point.x+size, point.y-size, point.z+size ), #6
+				Point3D(point.x-size, point.y-size, point.z+size )  #7
 				]
 
-#		self.vertices = points
-
-		# Define the vertices that compose each of the 6 faces. These numbers are
 		# indices to the vertices list defined above.
 		self.faces  = []
 	#			(0,1,2,3), #front  -z
@@ -82,63 +103,29 @@ class Cube:
 	#			(0,4,5,1), #top    +y
 	#			(3,2,6,7)  #bottom -y
 				
-
 		# Define colors for each face
 		self.colors = []
-
-		self.angle_x = 0
-		self.angle_y = 0
-		self.angle_z = 0
 
 		if self.point.x > 0:
 			self.faces.append((1,5,6,2))   #right
 			self.colors.append(COL_RED)
-#			self.faces.append((4,0,3,7))   #left
-#			self.colors.append(COL_BLACK)
 		elif self.point.x < 0:
 			self.faces.append((4,0,3,7))   #left
 			self.colors.append(COL_GREEN)
-#			self.faces.append((1,5,6,2))
-#			self.colors.append(COL_BLACK)
-#		else: 
-#			self.faces.append((1,5,6,2))
-#			self.colors.append(COL_BLACK)
-#			self.faces.append((4,0,3,7))   #left
-#			self.colors.append(COL_BLACK)
 
 		if self.point.y > 0:
 			self.faces.append((0,4,5,1))   #top
 			self.colors.append(COL_BLUE)
-#			self.faces.append((3,2,6,7))   #bottom
-#			self.colors.append(COL_BLACK)
 		elif self.point.y < 0:
 			self.faces.append((3,2,6,7))   #bottom
 			self.colors.append(COL_YELLOW)
-#			self.faces.append((0,4,5,1))   #top
-#			self.colors.append(COL_BLACK)
-#		else:
-#			self.faces.append((3,2,6,7))   #bottom
-#			self.colors.append(COL_BLACK)
-#			self.faces.append((0,4,5,1))   #top
-#			self.colors.append(COL_BLACK)
-
 		
 		if self.point.z < 0:
 			self.faces.append((0,1,2,3))   #front
 			self.colors.append(COL_PINK)
-#			self.faces.append((5,4,7,6))   #bottom
-#			self.colors.append(COL_BLACK)
 		elif self.point.z > 0:
 			self.faces.append((5,4,7,6))   #bottom
 			self.colors.append(COL_UNKNOW)
-#			self.faces.append((0,1,2,3))   #front
-#			self.colors.append(COL_BLACK)
-#		else:
-#			self.faces.append((0,1,2,3))   #front
-#			self.colors.append(COL_BLACK)
-#			self.faces.append((5,4,7,6))   #bottom
-#			self.colors.append(COL_BLACK)
-
 
 	def rotateX(self, x):
 		self.angle_x += x
@@ -149,42 +136,22 @@ class Cube:
 	def rotateZ(self, z):
 		self.angle_z += z
 
-	def update(self, screen):
-		# It will hold transformed vertices.
+	def update(self, game):
 		t = []
 
 		for v in self.vertices:
-			# Rotate the point around X axis, then around Y axis, and finally around Z axis.
 			r = v.rotateX(self.angle_x).rotateY(self.angle_y).rotateZ(self.angle_z)
 			# Transform the point from 3D to 2D
 			p = r.project(640, 480, 400, 6)
 			# Put the point in the list of transformed vertices
 			t.append(p)
 
-		# Calculate the average Z values of each face.
-		avg_z = []
-		i = 0
-		faces = []
 		for f in self.faces:
-			faces.append(f)
+			f_points = [ t[f[0]], t[f[1]], t[f[2]], t[f[3]] ]
+			color = self.colors[self.faces.index(f)]
+			face = Face(f_points, color)
+			game.draw_list.append(face)
 		
-		for f in faces:
-			z = (t[f[0]].z + t[f[1]].z + t[f[2]].z + t[f[3]].z) / 4.0
-			avg_z.append([i,z])
-			i = i + 1
-
-		# Draw the faces using the Painter's algorithm:
-		# Distant faces are drawn before the closer ones.
-		for tmp in sorted(avg_z,key=itemgetter(1),reverse=True):
-			face_index = tmp[0]
-			f = faces[face_index]
-			pointlist = [(t[f[0]].x, t[f[0]].y), (t[f[1]].x, t[f[1]].y),
-					(t[f[1]].x, t[f[1]].y), (t[f[2]].x, t[f[2]].y),
-					(t[f[2]].x, t[f[2]].y), (t[f[3]].x, t[f[3]].y),
-					(t[f[3]].x, t[f[3]].y), (t[f[0]].x, t[f[0]].y)]
-			pygame.draw.polygon(screen,self.colors[face_index],pointlist)
-			pygame.draw.lines(screen,(0,0,0), True, pointlist, 1)
-
 
 class Game:
 	"' '"
@@ -193,22 +160,102 @@ class Game:
 		self.screen = pygame.display.set_mode((win_width, win_height))
 		pygame.display.set_caption("Simulation of a rotating 3D Cube (http://codeNtronix.com)")
 		self.clock = pygame.time.Clock()
-
-	def run(self):
-		cube_list = []
-		cube_pos = [
-				(1,0,0),(-1,0,0),(0,1,0),(0,-1,0),(0,0,1),(0,0,-1),  #center_cube
-				(0,1,1),(0,1,-1),(0,-1,-1),(0,-1,1),
-				(1,0,1),(-1,0,1),(-1,0,-1),(1,0,-1),
-				(1,1,0),(1,-1,0),(-1,1,0),(-1,-1,0),
-				(1,1,1),(1,1,-1),(1,-1,1),(-1,1,1),(-1,-1,1),(-1,1,-1),(1,-1,-1),(-1,-1,-1)
+		self.draw_list = []
+		self.cube_list = []
+		self.cube_pos = [
+				(-1,-1,-1),(0,-1,-1),(1,-1,-1), #0,1,2 
+				(-1,-1, 0),(0,-1, 0),(1,-1, 0), #3,4,5
+				(-1,-1, 1),(0,-1, 1),(1,-1, 1),	#6,7,8
+				(-1, 0,-1),(0, 0,-1),(1, 0,-1),	#9,10,11
+				(-1, 0, 0),(0, 0, 0),(1, 0, 0),	#12,13,14
+				(-1, 0, 1),(0, 0, 1),(1, 0, 1), #15,16,17
+				(-1, 1,-1),(0, 1,-1),(1, 1,-1), #18,19,20
+				(-1, 1, 0),(0, 1, 0),(1, 1, 0), #21,22,23
+				(-1, 1, 1),(0, 1, 1),(1, 1, 1)  #24,25,26
 				]
 
-		for pos in cube_pos:
-			cube = Cube(Point3D(pos[0],pos[1],pos[2]))
-			cube_list.append(cube)
+		self.cubes_L1=range(0,9)
+		self.cubes_L2=range(9,18)
+		self.cubes_L3=range(18,27)
+		self.cubes_R1=[x*3 for x in range(0,9)]
+		self.cubes_R2=[x*3+1 for x in range(0,9)]
+		self.cubes_R3=[x*3+2 for x in range(0,9)]
+		self.cubes_F1=range(0,3)+range(9,12)+range(18,21)
+		self.cubes_F2=range(3,6)+range(12,15)+range(21,24)
+		self.cubes_F3=range(6,9)+range(15,18)+range(24,27)
 
+		for pos in self.cube_pos:
+			cube = Cube(Point3D(pos[0],pos[1],pos[2]))
+			self.cube_list.append(cube)
+
+	def RotateCubes(self, which, direct):
+		cube_list = []
+		if(which == "L1" ):
+			cube_list = self.cubes_L1
+		elif(which == "L2" ):
+			cube_list = self.cubes_L2
+		elif(which == "L3" ):
+			cube_list = self.cubes_L3
+		elif(which == "R1" ):
+			cube_list = self.cubes_R1
+		elif(which == "R2" ):
+			cube_list = self.cubes_R2
+		elif(which == "R3" ):
+			cube_list = self.cubes_R3
+		elif(which == "F1" ):
+			cube_list = self.cubes_F1
+		elif(which == "F2" ):
+			cube_list = self.cubes_F2
+		elif(which == "F3" ):
+			cube_list = self.cubes_F3
+		
+		angle = 0
+		while angle < 45:
+			for cube_index in cube_list:
+				cube = self.cube_list[cube_index]
+				if direct == "LEFT":
+					cube.rotateY(1)
+				elif direct == "RIGHT":
+					cube.rotateY(-1)
+				elif direct == "UP":
+					cube.rotateX(1)
+				#	cube.rotateZ(1)
+				elif direct == "DOWN":
+					cube.rotateX(-1)
+				#	cube.rotateZ(-1)
+				elif direct == "FRONT":
+					cube.rotateZ(1)
+				elif direct == "BACK":
+					cube.rotateZ(-1)
+			self.refresh()
+			angle +=1
+
+			self.clock.tick(1000)
+
+	def refresh(self):
+		"''"
+		self.draw_list = []
+		for cube in self.cube_list:
+			cube.update(self)
+		
+		avg_z = []
+		i = 0
+		for f in self.draw_list:
+			avg_z.append([i,f.avg_z()])
+			i = i + 1
+
+		self.screen.fill((0,0,0))
+		for tmp in sorted(avg_z,key=itemgetter(1),reverse=True):
+			self.draw_list[tmp[0]].display(self)
+
+		pygame.display.flip()
+
+	def run(self):
+
+		self.refresh()
+		
 		while 1:
+			
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
 					pygame.quit()
@@ -216,29 +263,20 @@ class Game:
 
 			pressed_keys = pygame.key.get_pressed()
 
-			self.screen.fill((0,0,0))
+			if  pressed_keys[K_LEFT]:
+				self.RotateCubes("L1", "LEFT")
+			elif  pressed_keys[K_RIGHT]:
+				self.RotateCubes("L1", "RIGHT")
+			elif  pressed_keys[K_UP]:
+				self.RotateCubes("R1", "UP")
+			elif  pressed_keys[K_DOWN]:
+				self.RotateCubes("R2", "DOWN")
+			elif  pressed_keys[K_a]:
+				self.RotateCubes("F1", "FRONT")
+			elif  pressed_keys[K_d]:
+				self.RotateCubes("F2", "BACK")
 
-			draw_cube_list=[]
-
-			for cube in cube_list:
-				if  pressed_keys[K_LEFT]:
-					cube.rotateY(1)
-				elif  pressed_keys[K_RIGHT]:
-					cube.rotateY(-1)
-				elif  pressed_keys[K_UP]:
-					cube.rotateX(1)
-				elif  pressed_keys[K_DOWN]:
-					cube.rotateX(-1)
-				elif  pressed_keys[K_a]:
-					cube.rotateZ(1)
-				elif  pressed_keys[K_d]:
-					cube.rotateZ(-1)
-				
-				cube.update(self.screen)
-
-			self.clock.tick(50)
-
-			pygame.display.flip()
 
 if __name__ == "__main__":
 	Game().run()
+
