@@ -128,6 +128,7 @@ class Cube:
 			self.colors.append(COL_UNKNOW)
 
 	def rotateX(self, x):
+		"' make angle_x add x  '"
 		self.angle_x += x
 
 	def rotateY(self, y):
@@ -174,62 +175,79 @@ class Game:
 				(-1, 1, 1),(0, 1, 1),(1, 1, 1)  #24,25,26
 				]
 
-		self.cubes_L1=range(0,9)
-		self.cubes_L2=range(9,18)
-		self.cubes_L3=range(18,27)
-		self.cubes_R1=[x*3 for x in range(0,9)]
-		self.cubes_R2=[x*3+1 for x in range(0,9)]
-		self.cubes_R3=[x*3+2 for x in range(0,9)]
-		self.cubes_F1=range(0,3)+range(9,12)+range(18,21)
-		self.cubes_F2=range(3,6)+range(12,15)+range(21,24)
-		self.cubes_F3=range(6,9)+range(15,18)+range(24,27)
+		self.cubes = [
+				[	(0,1,2,3,4,5,6,7,8), 		#range(0,9),
+					(9,10,11,12,13,14,15,16,17),#range(9,18),
+					(18,19,20,21,22,23,24,25,26)
+				],
+				[	(0,3,6,9,12,15,18,21,24),  #[x*3 for x in range(0,9)],
+					(1,4,7,10,13,16,19,22,25), #[x*3+1 for x in range(0,9)],
+					(2,5,8,11,14,17,20,23,26)  #[x*3+2 for x in range(0,9)]
+				],
+				[	(0,1,2,9,10,11,18,19,20),
+					(3,4,5,12,13,14,21,22,23),
+					(6,7,8,15,16,17,24,25,26)
+				]
+			]
 
 		for pos in self.cube_pos:
 			cube = Cube(Point3D(pos[0],pos[1],pos[2]))
 			self.cube_list.append(cube)
 
 	def RotateCubes(self, which, direct):
+		print "--------------------------------"
 		cube_list = []
-		if(which == "L1" ):
-			cube_list = self.cubes_L1
-		elif(which == "L2" ):
-			cube_list = self.cubes_L2
-		elif(which == "L3" ):
-			cube_list = self.cubes_L3
-		elif(which == "R1" ):
-			cube_list = self.cubes_R1
-		elif(which == "R2" ):
-			cube_list = self.cubes_R2
-		elif(which == "R3" ):
-			cube_list = self.cubes_R3
-		elif(which == "F1" ):
-			cube_list = self.cubes_F1
-		elif(which == "F2" ):
-			cube_list = self.cubes_F2
-		elif(which == "F3" ):
-			cube_list = self.cubes_F3
-		
+		for cube in self.cube_list:
+			point = cube.point.rotateX(cube.angle_x).rotateY(cube.angle_y).rotateZ(cube.angle_z)
+			if(which == "L1" and int(point.y) == -1):
+				cube_list.append(cube)
+				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
+			elif(which == "L2" and int(point.y) == 0):
+				cube_list.append(cube)
+				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
+			elif(which == "L3" and int(point.y) == 1):
+				cube_list.append(cube)
+				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
+			elif(which == "R1" and int(point.x) == -1):
+				cube_list.append(cube)
+				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
+			elif(which == "R2" and int(point.x) == 0):
+				cube_list.append(cube)
+				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
+			elif(which == "R3" and int(point.x) == 1):
+				cube_list.append(cube)
+				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
+			elif(which == "F1" and int(point.z) == -1):
+				cube_list.append(cube)
+				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
+			elif(which == "F2" and int(point.z) == 0):
+				cube_list.append(cube)
+				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
+			elif(which == "F3" and int(point.z) == 1):
+				cube_list.append(cube)
+				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
+			
 		angle = 0
-		while angle < 45:
-			for cube_index in cube_list:
-				cube = self.cube_list[cube_index]
+		while angle < 90:
+			#print "cube count: %d" % len(cube_list)
+			for cube in cube_list:
+				#print "%d  %d  %d" %(cube.point.x,cube.point.y,cube.point.z)
+				#cube = self.cube_list[cube_index]
 				if direct == "LEFT":
 					cube.rotateY(1)
 				elif direct == "RIGHT":
 					cube.rotateY(-1)
 				elif direct == "UP":
 					cube.rotateX(1)
-				#	cube.rotateZ(1)
 				elif direct == "DOWN":
 					cube.rotateX(-1)
-				#	cube.rotateZ(-1)
 				elif direct == "FRONT":
 					cube.rotateZ(1)
 				elif direct == "BACK":
 					cube.rotateZ(-1)
-			self.refresh()
-			angle +=1
 
+			angle +=1
+			self.refresh()
 			self.clock.tick(1000)
 
 	def refresh(self):
