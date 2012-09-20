@@ -96,12 +96,6 @@ class Cube:
 
 		# indices to the vertices list defined above.
 		self.faces  = []
-	#			(0,1,2,3), #front  -z
-	#			(1,5,6,2), #right  +x
-	#			(5,4,7,6), #behind +z
-	#			(4,0,3,7), #left   -x
-	#			(0,4,5,1), #top    +y
-	#			(3,2,6,7)  #bottom -y
 				
 		# Define colors for each face
 		self.colors = []
@@ -130,12 +124,31 @@ class Cube:
 	def rotateX(self, x):
 		"' make angle_x add x  '"
 		self.angle_x += x
+		if self.angle_x < 0:
+			self.angle_x += 360
+		elif self.angle_x >= 360:
+			self.angle_x -= 360
+
 
 	def rotateY(self, y):
 		self.angle_y += y
+		if self.angle_y < 0:
+			self.angle_y += 360
+		elif self.angle_y >= 360:
+			self.angle_y -= 360
+
 
 	def rotateZ(self, z):
 		self.angle_z += z
+		if self.angle_z < 0:
+			self.angle_z += 360
+		elif self.angle_z >= 360:
+			self.angle_z -= 360
+
+	#	self.point = self.point.rotateZ(z)
+
+	def getCurPoint(self):
+		return self.point.rotateX(self.angle_x).rotateY(self.angle_y).rotateZ(self.angle_z)
 
 	def update(self, game):
 		t = []
@@ -195,60 +208,46 @@ class Game:
 			self.cube_list.append(cube)
 
 	def RotateCubes(self, which, direct):
-		print "--------------------------------"
 		cube_list = []
 		for cube in self.cube_list:
-			point = cube.point.rotateX(cube.angle_x).rotateY(cube.angle_y).rotateZ(cube.angle_z)
+			point = cube.getCurPoint()
 			if(which == "L1" and int(point.y) == -1):
 				cube_list.append(cube)
-				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
 			elif(which == "L2" and int(point.y) == 0):
 				cube_list.append(cube)
-				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
 			elif(which == "L3" and int(point.y) == 1):
 				cube_list.append(cube)
-				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
 			elif(which == "R1" and int(point.x) == -1):
 				cube_list.append(cube)
-				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
 			elif(which == "R2" and int(point.x) == 0):
 				cube_list.append(cube)
-				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
 			elif(which == "R3" and int(point.x) == 1):
 				cube_list.append(cube)
-				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
 			elif(which == "F1" and int(point.z) == -1):
 				cube_list.append(cube)
-				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
 			elif(which == "F2" and int(point.z) == 0):
 				cube_list.append(cube)
-				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
 			elif(which == "F3" and int(point.z) == 1):
 				cube_list.append(cube)
-				print "point x,y,z : %d %d %d"% (int(point.x), int(point.y), int(point.z))
-			
+
 		angle = 0
 		while angle < 90:
-			#print "cube count: %d" % len(cube_list)
 			for cube in cube_list:
-				#print "%d  %d  %d" %(cube.point.x,cube.point.y,cube.point.z)
-				#cube = self.cube_list[cube_index]
 				if direct == "LEFT":
-					cube.rotateY(1)
+					cube.rotateY(2)
 				elif direct == "RIGHT":
-					cube.rotateY(-1)
+					cube.rotateY(-2)
 				elif direct == "UP":
-					cube.rotateX(1)
+					cube.rotateX(2)
 				elif direct == "DOWN":
-					cube.rotateX(-1)
+					cube.rotateX(-2)
 				elif direct == "FRONT":
-					cube.rotateZ(1)
+					cube.rotateZ(-2)
 				elif direct == "BACK":
-					cube.rotateZ(-1)
+					cube.rotateZ(2)
 
-			angle +=1
+			angle += 2
 			self.refresh()
-			self.clock.tick(1000)
 
 	def refresh(self):
 		"''"
@@ -266,6 +265,7 @@ class Game:
 		for tmp in sorted(avg_z,key=itemgetter(1),reverse=True):
 			self.draw_list[tmp[0]].display(self)
 
+		self.clock.tick(40)
 		pygame.display.flip()
 
 	def run(self):
@@ -281,6 +281,7 @@ class Game:
 
 			pressed_keys = pygame.key.get_pressed()
 
+			#pygame.time.delay(80)
 			if  pressed_keys[K_LEFT]:
 				self.RotateCubes("L1", "LEFT")
 			elif  pressed_keys[K_RIGHT]:
