@@ -76,136 +76,91 @@ class Face:
 		pygame.draw.polygon(game.screen, self.color,pointlist)
 		pygame.draw.lines(game.screen, COL_BLACK, True, pointlist, 1)
 
+def angle_reg(angle):
+	if(angle < 0):
+		return angle+360
+	elif (angle >=360):
+		return angle-360
+	else:
+		return angle
+
 class Cube:
-	"' cube unit '"
-	def __init__(self,point,size=0.5):
-		self.point = point
-		self.angle_x = 0
-		self.angle_y = 0
-		self.angle_z = 0
-		self.vertices = [
-				Point3D(point.x-size, point.y+size, point.z-size ), #0
-				Point3D(point.x+size, point.y+size, point.z-size ), #1
-				Point3D(point.x+size, point.y-size, point.z-size ), #2
-				Point3D(point.x-size, point.y-size, point.z-size ), #3
-				Point3D(point.x-size, point.y+size, point.z+size ), #4
-				Point3D(point.x+size, point.y+size, point.z+size ), #5
-				Point3D(point.x+size, point.y-size, point.z+size ), #6
-				Point3D(point.x-size, point.y-size, point.z+size )  #7
-				]
+	"""
+	cube unit block
+	"""
+
+	vert_index = [
+			(-1, 1, -1), (1,1,-1),(1,-1,-1),(-1,-1,-1),
+			(-1, 1, 1), (1,1,1),(1,-1,1),(-1,-1,1)
+			]
 
 		# indices to the vertices list defined above.
-		self.faces  = []
-				
-		# Define colors for each face
-		self.colors = []
+	face_vert = [
+			(1,5,6,2),(4,0,3,7),(0,4,5,1),
+			(3,2,6,7),(0,1,2,3),(5,4,7,6)
+			]
 
-		if self.point.x > 0:
-			self.faces.append((1,5,6,2))   #right
-			self.colors.append(COL_RED)
-		elif self.point.x < 0:
-			self.faces.append((4,0,3,7))   #left
-			self.colors.append(COL_GREEN)
+	# Define colors for each face
+	face_colors = [
+			COL_RED, COL_GREEN, COL_BLUE,
+			COL_YELLOW, COL_PINK, COL_UNKNOW
+			]
 
-		if self.point.y > 0:
-			self.faces.append((0,4,5,1))   #top
-			self.colors.append(COL_BLUE)
-		elif self.point.y < 0:
-			self.faces.append((3,2,6,7))   #bottom
-			self.colors.append(COL_YELLOW)
-		
-		if self.point.z < 0:
-			self.faces.append((0,1,2,3))   #front
-			self.colors.append(COL_PINK)
-		elif self.point.z > 0:
-			self.faces.append((5,4,7,6))   #bottom
-			self.colors.append(COL_UNKNOW)
+	def __init__(self,point,size=0.5):
+		self.point = point
+		self.angle = [0,0,0]
+		self.vertices = []
 
-	def rotateX(self, x):
-		"' make angle_x add x  '"
-		self.angle_x += x
-		if self.angle_x < 0:
-			self.angle_x += 360
-		elif self.angle_x >= 360:
-			self.angle_x -= 360
+		for vert in Cube.vert_index:
+			self.vertices.append(Point3D(point.x+vert[0]*size, 
+				point.y+vert[1]*size, 
+				point.z+vert[2]*size ))
 
+		self.face_color = zip(Cube.face_vert, Cube.face_colors)
 
-	def rotateY(self, y):
-		self.angle_y += y
-		if self.angle_y < 0:
-			self.angle_y += 360
-		elif self.angle_y >= 360:
-			self.angle_y -= 360
-
-
-	def rotateZ(self, z):
-		self.angle_z += z
-		if self.angle_z < 0:
-			self.angle_z += 360
-		elif self.angle_z >= 360:
-			self.angle_z -= 360
-
-	#	self.point = self.point.rotateZ(z)
+	def rotate(self, angle):
+		self.angle = [ x+y for x,y in zip(self.angle, angle)]
 
 	def getCurPoint(self):
-		return self.point.rotateX(self.angle_x).rotateY(self.angle_y).rotateZ(self.angle_z)
+		return self.point.rotateX(self.angle[0]).rotateY(self.angle[1]).rotateZ(self.angle[2])
 
-	def update(self, game):
+	def update(self, mc):
 		t = []
+		draw_list = mc.game.draw_list
 
 		for v in self.vertices:
-			r = v.rotateX(self.angle_x).rotateY(self.angle_y).rotateZ(self.angle_z)
+			r = v.rotateX(self.angle[0]).rotateY(self.angle[1]).rotateZ(self.angle[2])
 			# Transform the point from 3D to 2D
-			p = r.project(640, 480, 400, 6)
+			p = r.project(640, 480, 400, 8)
 			# Put the point in the list of transformed vertices
 			t.append(p)
 
-		for f in self.faces:
+		for fc in self.face_color:
+			f = fc[0]
+			c = fc[1]
 			f_points = [ t[f[0]], t[f[1]], t[f[2]], t[f[3]] ]
-			color = self.colors[self.faces.index(f)]
-			face = Face(f_points, color)
-			game.draw_list.append(face)
+			face = Face(f_points, c)
+			draw_list.append(face)
 		
 
-class Game:
-	"' '"
-	def __init__(self, win_width = 640, win_height = 480):
-		pygame.init()
-		self.screen = pygame.display.set_mode((win_width, win_height))
-		pygame.display.set_caption("Simulation of a rotating 3D Cube (http://codeNtronix.com)")
-		self.clock = pygame.time.Clock()
-		self.draw_list = []
+class MagicCube:
+	""""""
+	def_pos = (0,0,0)
+
+	def __init__(self, game, pos=def_pos):
+		self.pos = pos 
+		self.game = game
 		self.cube_list = []
-		self.cube_pos = [
-				(-1,-1,-1),(0,-1,-1),(1,-1,-1), #0,1,2 
-				(-1,-1, 0),(0,-1, 0),(1,-1, 0), #3,4,5
-				(-1,-1, 1),(0,-1, 1),(1,-1, 1),	#6,7,8
-				(-1, 0,-1),(0, 0,-1),(1, 0,-1),	#9,10,11
-				(-1, 0, 0),(0, 0, 0),(1, 0, 0),	#12,13,14
-				(-1, 0, 1),(0, 0, 1),(1, 0, 1), #15,16,17
-				(-1, 1,-1),(0, 1,-1),(1, 1,-1), #18,19,20
-				(-1, 1, 0),(0, 1, 0),(1, 1, 0), #21,22,23
-				(-1, 1, 1),(0, 1, 1),(1, 1, 1)  #24,25,26
-				]
 
-		self.cubes = [
-				[	(0,1,2,3,4,5,6,7,8), 		#range(0,9),
-					(9,10,11,12,13,14,15,16,17),#range(9,18),
-					(18,19,20,21,22,23,24,25,26)
-				],
-				[	(0,3,6,9,12,15,18,21,24),  #[x*3 for x in range(0,9)],
-					(1,4,7,10,13,16,19,22,25), #[x*3+1 for x in range(0,9)],
-					(2,5,8,11,14,17,20,23,26)  #[x*3+2 for x in range(0,9)]
-				],
-				[	(0,1,2,9,10,11,18,19,20),
-					(3,4,5,12,13,14,21,22,23),
-					(6,7,8,15,16,17,24,25,26)
-				]
-			]
-
-		for pos in self.cube_pos:
-			cube = Cube(Point3D(pos[0],pos[1],pos[2]))
-			self.cube_list.append(cube)
+		for x in range(-1, 2):
+			for y in range(-1, 2):
+				for z in range(-1,2):
+					cube = Cube(Point3D(self.pos[0]+x,
+						self.pos[1]+y, 
+						self.pos[2]+z))
+					self.cube_list.append(cube)
+#		for pos in MagicCube.cube_pos:
+#			cube = Cube(Point3D(pos[0],pos[1],pos[2]))
 
 	def RotateCubes(self, which, direct):
 		cube_list = []
@@ -234,46 +189,68 @@ class Game:
 		while angle < 90:
 			for cube in cube_list:
 				if direct == "LEFT":
-					cube.rotateY(2)
+					cube.rotate((0,2,0))
 				elif direct == "RIGHT":
-					cube.rotateY(-2)
+					cube.rotate((0,-2,0))
 				elif direct == "UP":
-					cube.rotateX(2)
+					cube.rotate((2,0,0))
 				elif direct == "DOWN":
-					cube.rotateX(-2)
+					cube.rotate((-2,0,0))
 				elif direct == "FRONT":
-					cube.rotateZ(-2)
+					cube.rotate((0,0,-2))
 				elif direct == "BACK":
-					cube.rotateZ(2)
-
+					cube.rotate((0,0,2))
 			angle += 2
-			self.refresh()
 
-	def refresh(self):
-		"''"
-		self.draw_list = []
+	def update(self):
+		"""
+
+		"""
+		#self.draw_list = []
 		for cube in self.cube_list:
 			cube.update(self)
-		
+
+class Game:
+	"' '"
+	def __init__(self, win_width = 640, win_height = 480):
+		pygame.init()
+		pygame.display.set_caption("Magic Cube")
+		self.screen = pygame.display.set_mode((win_width, win_height))
+		self.draw_list = []
+		self.clock = pygame.time.Clock()
+		self.items = []	
+		self.items.append(MagicCube(self))
+#		self.items.append(MagicCube(self, (-1,0,0)))
+
+	def update(self):
+		"""
+
+		"""
+		self.draw_list = []
+		self.screen.fill((0,0,0))
+
+		for item in self.items:
+			item.update()
+
 		avg_z = []
 		i = 0
 		for f in self.draw_list:
 			avg_z.append([i,f.avg_z()])
 			i = i + 1
 
-		self.screen.fill((0,0,0))
 		for tmp in sorted(avg_z,key=itemgetter(1),reverse=True):
 			self.draw_list[tmp[0]].display(self)
 
-		self.clock.tick(40)
+		self.clock.tick(10)
 		pygame.display.flip()
-
+	
 	def run(self):
-
-		self.refresh()
-		
+		"""
+		"""
 		while 1:
-			
+
+			self.update()
+
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
 					pygame.quit()
@@ -281,19 +258,18 @@ class Game:
 
 			pressed_keys = pygame.key.get_pressed()
 
-			#pygame.time.delay(80)
 			if  pressed_keys[K_LEFT]:
-				self.RotateCubes("L1", "LEFT")
+				self.items[0].RotateCubes("L1", "LEFT")
 			elif  pressed_keys[K_RIGHT]:
-				self.RotateCubes("L1", "RIGHT")
+				self.items[0].RotateCubes("L1", "RIGHT")
 			elif  pressed_keys[K_UP]:
-				self.RotateCubes("R1", "UP")
+				self.items[0].RotateCubes("R1", "UP")
 			elif  pressed_keys[K_DOWN]:
-				self.RotateCubes("R2", "DOWN")
+				self.items[0].RotateCubes("R2", "DOWN")
 			elif  pressed_keys[K_a]:
-				self.RotateCubes("F1", "FRONT")
+				self.items[0].RotateCubes("F1", "FRONT")
 			elif  pressed_keys[K_d]:
-				self.RotateCubes("F2", "BACK")
+				self.items[0].RotateCubes("F2", "BACK")
 
 
 if __name__ == "__main__":
